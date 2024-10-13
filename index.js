@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
 const { BotFrameworkAdapter, ActivityTypes } = require('botbuilder');
 const fetch = require('node-fetch');
 
-
 dotenv.config();
 
 const app = express();
@@ -79,35 +78,21 @@ async function handleMessage(text, sessionId) {
 
 // Handle incoming activities
 app.post('/api/messages', (req, res) => {
-  adapter.processActivity(req, res, async (context) => {
-    if (context.activity.type === ActivityTypes.Message) {
-      if (context.activity.attachments && context.activity.attachments.length > 0) {
-        // Handle file attachments
-        for (let attachment of context.activity.attachments) {
-          if (attachment.contentType.startsWith('image/') || attachment.contentType.startsWith('video/')) {
-            // Process the file
-            await handleFileAttachment(context, attachment);
-          }
-        }
-      } else {
-        // Handle text messages as before
-        const text = context.activity.text;
-        const sessionId = context.activity.conversation.id;
-        const reply = await handleMessage(text, sessionId);
-        await context.sendActivity(reply);
-      }
-    }
-  });
-});
+    adapter.processActivity(req, res, async (context) => {
+        if (context.activity.type === ActivityTypes.Message) {
+            const text = context.activity.text;
+            const sessionId = context.activity.conversation.id;
 
-async function handleFileAttachment(context, attachment) {
-  // Download the file
-  const fileDownload = await axios.get(attachment.contentUrl, { responseType: 'arraybuffer' });
-  
-  // Process the file (this is where you'd integrate with your Flowise API or other services)
-  // For now, we'll just acknowledge receipt
-  await context.sendActivity(`Received ${attachment.contentType} file: ${attachment.name}`);
-}
+            try {
+                const reply = await handleMessage(text, sessionId);
+                await context.sendActivity(reply);
+            } catch (error) {
+                logger("Error processing message:", error);
+                await context.sendActivity("I'm sorry, I encountered an error while processing your request.");
+            }
+        }
+    });
+});
 
 app.get("/health", (req, res) => {
     res.json({ status: "UP", message: "Teams webhook is running" });
