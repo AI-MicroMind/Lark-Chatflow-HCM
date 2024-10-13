@@ -2,7 +2,7 @@
   "name": "teams-integration",
   "version": "1.0.0",
   "description": "Microsoft Teams Webhook Integration for Chatflow",
-  "main": "teams.js",  // Ensure this is correctly set
+  "main": "teams.js",
   "scripts": {
     "start": "node teams.js", 
     "dev": "nodemon teams.js"
