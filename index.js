@@ -19,6 +19,7 @@ function logger(...params) {
 
 async function query(data, sessionId) {
   try {
+    logger(`Querying Flowise API with: ${JSON.stringify(data)}`);
     const history = conversationHistories[sessionId] || [];
     history.push(data.question);
     conversationHistories[sessionId] = history;
@@ -35,7 +36,17 @@ async function query(data, sessionId) {
         }
       }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Flowise API responded with status: ${response.status}`);
+    }
+
     const result = await response.json();
+    logger(`Flowise API response: ${JSON.stringify(result)}`);
+
+    if (!result.text) {
+      throw new Error('Unexpected response format from Flowise API');
+    }
 
     history.push(result.text);
     conversationHistories[sessionId] = history;
@@ -48,7 +59,7 @@ async function query(data, sessionId) {
 }
 
 async function handleMessage(text, sessionId) {
-  logger("Received message:", text);
+  logger("Handling message:", text);
   
   if (text.toLowerCase().startsWith("/clear")) {
     delete conversationHistories[sessionId];
@@ -64,13 +75,15 @@ app.post("/teams-webhook", async (req, res) => {
   
   let text, sessionId;
 
-  // Handle different possible message formats
   if (req.body.type === "message") {
     text = req.body.text;
     sessionId = req.body.conversation.id;
-  } else if (req.body.text && req.body.sessionId) {
+  } else if (req.body.type === "conversationUpdate") {
+    // Handle bot being added to a conversation
+    return res.status(200).send();
+  } else if (req.body.text && req.body.from && req.body.from.id) {
     text = req.body.text;
-    sessionId = req.body.sessionId;
+    sessionId = req.body.from.id;
   } else {
     logger("Unrecognized message format");
     return res.status(400).json({ error: "Invalid input format" });
