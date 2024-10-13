@@ -2,21 +2,23 @@
   "name": "teams-integration",
   "version": "1.0.0",
   "description": "Microsoft Teams Webhook Integration for Chatflow",
-  "main": "teams.js",
+  "main": "teams.js",  // Ensure this is correct
+  "type": "module",  // Add this line to enable ES module support
   "scripts": {
-    "start": "node teams.js", 
+    "start": "node teams.js",
     "dev": "nodemon teams.js"
   },
   "dependencies": {
     "express": "^4.17.1",
     "dotenv": "^10.0.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "@larksuiteoapi/node-sdk": "^1.0.0"  // Ensure you have this dependency for Lark SDK
   },
   "devDependencies": {
     "nodemon": "^2.0.7"
   },
   "engines": {
-    "node": "14.x"  
+    "node": "14.x"  // You might want to upgrade to a maintained version like 16.x or 18.x
   },
   "author": "Ahmed El-Ghaffar",
   "license": "ISC"
