@@ -1,28 +1,20 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const fetch = require("node-fetch");
-const cors = require("cors");
 
 dotenv.config();
-
-app.use(
-  cors({
-    origin: "*", // You can restrict this to specific domains, such as Azure, by replacing '*' with allowed domains
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
 
 const app = express();
 app.use(express.json());
 
-const FLOWISE_API_URL = process.env.FLOWISE_API_URL || "";
+const FLOWISE_API_URL = process.env.FLOWISE_API_URL || ""; // Ensure this is set in your environment variables
 
+// Simple logger function
 function logger(...params) {
   console.error("[Teams Integration]", ...params);
 }
 
-// Query Flowise API
+// Query Flowise API to get responses from chatflow
 async function queryFlowise(question, sessionId) {
   const data = {
     question: question,
@@ -54,7 +46,7 @@ async function queryFlowise(question, sessionId) {
   }
 }
 
-// Handle Microsoft Teams incoming requests
+// Handle incoming requests from Microsoft Teams
 app.post("/teams-webhook", async (req, res) => {
   const { text, sessionId } = req.body;
 
@@ -64,6 +56,7 @@ app.post("/teams-webhook", async (req, res) => {
   }
 
   try {
+    // Query the Flowise API (your chatflow)
     const answer = await queryFlowise(text, sessionId);
     res.json({ message: answer });
   } catch (error) {
@@ -77,11 +70,12 @@ app.get("/health", (req, res) => {
   res.json({ status: "UP", message: "Teams webhook is running" });
 });
 
-// Catch-all route for serving the frontend (Make sure this is the last route!)
+// Catch-all route for undefined routes
 app.get("*", (req, res) => {
-  res.status(404).json({ error: "Not Found" });  // Handle non-existent routes
+  res.status(404).json({ error: "Not Found" });
 });
 
+// Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Teams webhook server running on port ${port}`);
