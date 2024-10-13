@@ -14,7 +14,7 @@ app.use(express.json());
 const conversationHistories = {};
 
 function logger(...params) {
-  console.error(`[Teams Integration]`, ...params);
+  console.log(`[Teams Integration]`, ...params);
 }
 
 async function query(data, sessionId) {
@@ -42,7 +42,7 @@ async function query(data, sessionId) {
 
     return result;
   } catch (error) {
-    console.error("Error querying Flowise API:", error);
+    logger("Error querying Flowise API:", error);
     throw error;
   }
 }
@@ -50,7 +50,7 @@ async function query(data, sessionId) {
 async function handleMessage(text, sessionId) {
   logger("Received message:", text);
   
-  if (text.startsWith("/clear")) {
+  if (text.toLowerCase().startsWith("/clear")) {
     delete conversationHistories[sessionId];
     return "✅ Conversation history cleared.";
   }
@@ -60,15 +60,34 @@ async function handleMessage(text, sessionId) {
 }
 
 app.post("/teams-webhook", async (req, res) => {
-  const { text, sessionId } = req.body;
+  logger("Received webhook request:", JSON.stringify(req.body, null, 2));
+  
+  let text, sessionId;
+
+  // Handle different possible message formats
+  if (req.body.type === "message") {
+    text = req.body.text;
+    sessionId = req.body.conversation.id;
+  } else if (req.body.text && req.body.sessionId) {
+    text = req.body.text;
+    sessionId = req.body.sessionId;
+  } else {
+    logger("Unrecognized message format");
+    return res.status(400).json({ error: "Invalid input format" });
+  }
 
   if (!text || !sessionId) {
+    logger("Missing text or sessionId");
     return res.status(400).json({ error: "Invalid input. 'text' and 'sessionId' are required." });
   }
 
   try {
     const answer = await handleMessage(text, sessionId);
-    res.json({ message: answer });
+    logger("Sending response:", answer);
+    res.json({ 
+      type: "message",
+      text: answer
+    });
   } catch (error) {
     logger("Error handling Teams webhook:", error);
     res.status(500).json({ error: "Internal Server Error. Please try again later." });
@@ -80,5 +99,5 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Teams webhook server running on port ${port}`);
+  logger(`Teams webhook server running on port ${port}`);
 });
