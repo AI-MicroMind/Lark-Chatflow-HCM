@@ -19,6 +19,7 @@ const adapter = new BotFrameworkAdapter({
 });
 
 const conversationHistories = {};
+const backupHistories = {};
 
 function logger(...params) {
     console.log(`[Teams Integration]`, ...params);
@@ -68,12 +69,38 @@ async function query(data, sessionId) {
 async function handleMessage(text, sessionId) {
     logger("Handling message:", text);
     
-    if (text.toLowerCase().startsWith("/clear")) {
+    if (text.toLowerCase() === "/clear" || text.toLowerCase() === "/new") {
+        if (conversationHistories[sessionId]) {
+            backupHistories[sessionId] = backupHistories[sessionId] || [];
+            backupHistories[sessionId].push([...conversationHistories[sessionId]]);
+        }
         delete conversationHistories[sessionId];
-        return "✅ Conversation history cleared.";
+        return "✅ Conversation history cleared and backed up. You can start a new session now.";
     }
 
-    return await query({ question: text }, sessionId);
+    if (text.toLowerCase() === "/history") {
+        const backedUpChats = backupHistories[sessionId];
+        if (!backedUpChats || backedUpChats.length === 0) {
+            return "No backed-up chat history available.";
+        }
+        return "Here are your backed-up chats:\n\n" + 
+               backedUpChats.map((chat, index) => 
+                 `Chat ${index + 1}:\n${chat.join("\n")}\n`
+               ).join("\n");
+    }
+
+    const response = await query({ question: text }, sessionId);
+    
+    if (response.toLowerCase().includes("task complete") || response.toLowerCase().includes("anything else i can help you with")) {
+        if (conversationHistories[sessionId]) {
+            backupHistories[sessionId] = backupHistories[sessionId] || [];
+            backupHistories[sessionId].push([...conversationHistories[sessionId]]);
+        }
+        delete conversationHistories[sessionId];
+        return response + "\n\nThe session has been cleared and backed up. You can start a new inquiry.";
+    }
+
+    return response;
 }
 
 // Handle incoming activities
