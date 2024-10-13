@@ -1,8 +1,17 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const fetch = require("node-fetch");
+const cors = require("cors");
 
 dotenv.config();
+
+app.use(
+  cors({
+    origin: "*", // You can restrict this to specific domains, such as Azure, by replacing '*' with allowed domains
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const app = express();
 app.use(express.json());
